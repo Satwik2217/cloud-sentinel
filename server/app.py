@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from .models import Observation, Action, StepResponse
 from .logic import CloudSentinelEnv
 import os
+import uvicorn
 
 app = FastAPI(title="Cloud Sentinel OpenEnv")
 
@@ -77,3 +78,12 @@ async def trigger_baseline():
             "hard-budget-architect": 1.0
         }
     }
+
+
+
+def main():
+    """Entry point for the OpenEnv multi-mode deployment."""
+    uvicorn.run("server.app:app", host="0.0.0.0", port=8000, reload=False)
+
+if __name__ == "__main__":
+    main()

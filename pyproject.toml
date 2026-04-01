@@ -20,7 +20,7 @@ dependencies = [
 
 # This defines the command 'server' to run your FastAPI app
 [project.scripts]
-server = "server.app:app"
+server = "server.app:main"
 
 [tool.setuptools]
 # This ensures all modules in the server directory are included
