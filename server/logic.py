@@ -1,8 +1,9 @@
 import uuid
 import random
-from models import CloudResource, Observation, Action
+# Relative import ensures it works within the 'server' folder package
+from .models import CloudResource, Observation, Action
 
-class CloudEnv:
+class CloudSentinelEnv:
     def __init__(self):
         self.resources = []
         self.reset()
@@ -26,7 +27,7 @@ class CloudEnv:
         # Standard monthly cost calculation (720 hours)
         total_cost = sum(r.cost_per_hour * 720 for r in self.resources)
         
-        # Security Score: Starts at 100, drops for every public/unencrypted resource
+        # Security Score logic
         if not self.resources:
             security_score = 100.0
         else:
@@ -42,26 +43,26 @@ class CloudEnv:
 
     def step(self, action: Action):
         """
-        The core logic: Handles actions and returns 5 values for OpenEnv compliance:
+        Handles actions and returns 5 values for OpenEnv compliance:
         (obs, reward, terminated, truncated, info)
         """
         reward = 0.0
         terminated = False
-        truncated = False # We set this to False as we handle step limits in the inference script
+        truncated = False 
         info = {}
         
         # Find the target resource
         target = next((r for r in self.resources if r.id == action.resource_id), None)
 
-        # SAFETY VALVE: If the resource ID is wrong, give a penalty
+        # SAFETY VALVE
         if not target:
             return self._get_obs(), -1.0, False, False, {"error": "Invalid Resource ID"}
 
         # COMMAND 1: TERMINATE (The 'Zombie Hunt' Task)
         if action.command == "terminate":
-            if target.cpu_usage < 10: # Success: Killed a zombie resource
+            if target.cpu_usage < 10: 
                 reward += 2.0 
-            else: # Failure: Killed a useful production server!
+            else: 
                 reward -= 2.5
             self.resources.remove(target)
 
@@ -71,7 +72,7 @@ class CloudEnv:
                 target.is_encrypted = True
                 reward += 0.5
             else:
-                reward -= 0.1 # Penalty for wasting an action
+                reward -= 0.1 
 
         # COMMAND 3: REVOKE ACCESS (The 'Security Sweep' Task)
         elif action.command == "revoke_access":
@@ -81,14 +82,14 @@ class CloudEnv:
             else:
                 reward -= 0.1
 
-        # Check for 'Terminated' status (Success/Goal Reached)
+        # Check for 'Terminated' status
         obs = self._get_obs()
         
         # Win Condition: No resources left or very high security + low cost
         if len(self.resources) == 0:
             terminated = True
         elif obs.security_score == 100 and obs.total_monthly_cost < 500:
-            reward += 10.0 # Huge bonus for completing the 'Hard' task
+            reward += 10.0 
             terminated = True
 
         return obs, reward, terminated, truncated, info

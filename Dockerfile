@@ -4,25 +4,32 @@ FROM python:3.11-slim
 # 2. Set the 'Home' folder inside the container
 WORKDIR /app
 
-# 3. Install system dependencies (Required for some OpenEnv validation tools)
+# 3. Install system dependencies (Required for health checks)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# 4. Copy requirements first to leverage Docker cache
-COPY requirements.txt .
+# 4. Copy requirements and pyproject.toml first to leverage Docker cache
+COPY requirements.txt pyproject.toml ./
 
-# 5. Install the necessary tools (Pinned to requirements for stability)
+# 5. Install the necessary tools
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # 6. Copy the rest of the application files
 COPY . .
 
-# 7. Open the door (Port 7860 is standard for HF Spaces, but we'll stick to 8000 
-# as per your main.py config, just ensure your HF Space is set to 8000)
+# --- CRITICAL ADDITION ---
+# 7. Set PYTHONPATH so Python sees the /app root as the package source.
+# This fixes the "ModuleNotFoundError: No module named 'models'" error.
+ENV PYTHONPATH=/app
+
+# 8. Open the door
 EXPOSE 8000
 
-# 8. The command to start our project automatically
-# Added --workers 1 to stay within the 2 vCPU limit and ensure stability
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+# Tells Python to look for modules starting from the /app directory
+ENV PYTHONPATH=/app
+
+# 9. The command to start our project automatically
+# Pointing to server.app:app because of our new folder structure.
+CMD ["uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
