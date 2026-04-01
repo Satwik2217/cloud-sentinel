@@ -1,0 +1,57 @@
+spec_version: "1.0"
+name: "cloud-sentinel"
+version: "0.1.0"
+description: "A real-world simulation for Cloud FinOps and Security auditing. Agents must balance cost reduction with security compliance."
+author: "Satwik Mishra"
+
+# This defines the interface for the Meta Automated Validator
+interface:
+  observation_schema:
+    type: "object"
+    required: ["resources", "total_monthly_cost", "security_score"]
+    properties:
+      resources: 
+        type: "array"
+        items:
+          type: "object"
+          properties:
+            id: { type: "string" }
+            type: { type: "string" }
+            cpu_usage: { type: "number" }
+            cost_per_hour: { type: "number" }
+            is_public: { type: "boolean" }
+            is_encrypted: { type: "boolean" }
+      total_monthly_cost: { type: "number" }
+      security_score: { type: "number" }
+  
+  action_schema:
+    type: "object"
+    required: ["command", "resource_id"]
+    properties:
+      command: 
+        type: "string" 
+        enum: ["terminate", "encrypt", "revoke_access"]
+      resource_id: 
+        type: "string"
+
+# This defines the 3 mandatory tasks for the /tasks and /grader endpoints
+tasks:
+  - id: "easy-zombie-hunt"
+    name: "Zombie Hunter"
+    difficulty: "easy"
+    description: "Identify and terminate idle resources (CPU < 10%) to reduce wasted spend."
+  
+  - id: "medium-security-sweep"
+    name: "Security Hardening"
+    difficulty: "medium"
+    description: "Encrypt all storage and revoke public access to reach a perfect security score."
+
+  - id: "hard-budget-architect"
+    name: "Total Optimization"
+    difficulty: "hard"
+    description: "Reduce monthly cost below $500 while maintaining a security score of 100."
+
+evaluation:
+  # MANDATORY: Must point to inference.py
+  baseline_script: "python inference.py"
+  primary_metric: "score" # This matches the key returned by your /grader endpoint
